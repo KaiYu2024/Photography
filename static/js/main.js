@@ -21,6 +21,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
     // 隱藏結果區，顯示載入區
     resultsSection.classList.add('hidden');
     loadingSection.classList.remove('hidden');
+    loadingSection.style.display = 'flex';
 
     try {
         const response = await fetch('/analyze_image', {
