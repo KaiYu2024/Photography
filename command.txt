@@ -1,1 +1,0 @@
-az webapp up --runtime PYTHON:3.13 --sku F1 --name kai-photography-line-bot-app --location swedencentral --resource-group GAE25407RG
