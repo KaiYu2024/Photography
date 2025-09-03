@@ -2,3 +2,4 @@ line-bot-sdk
 flask
 azure-ai-vision-imageanalysis
 openai
+pillow
