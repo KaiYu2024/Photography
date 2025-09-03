@@ -48,7 +48,7 @@ image_client = ImageAnalysisClient(
 # OpenAI Setup
 azure_client = AzureOpenAI(
     azure_endpoint=config["AzureOpenAI"]["EndPoint"],
-    api_key=config["AzureOpenAI"]["Key"],
+    api_key=os.getenv("OPENAI_API_KEY"),
     api_version=config["AzureOpenAI"]["ApiVersion"]
 )
 URL = config["Deploy"]["WEBSITE"]
@@ -60,7 +60,7 @@ UPLOAD_FOLDER="static"
 app = Flask(__name__, static_folder="static", static_url_path="/files")
 
 # Channel Access Token & Secret
-channel_access_token = config['Line']['CHANNEL_ACCESS_TOKEN']
+channel_access_token = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 channel_secret = config['Line']['CHANNEL_SECRET']
 if channel_secret is None:
     print('Specify LINE_CHANNEL_SECRET as environment variable.')
