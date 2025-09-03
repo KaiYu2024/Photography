@@ -129,12 +129,12 @@ def message_image(event):
             message_content=line_bot_blob_api.get_message_content(message_id=event.message.id)
 
         # 獲取當前的時間
-        #timestamp = int(time.time())
+        timestamp = int(time.time())
 
         # 定義圖片路徑，加上時間標籤
-        original_path = f'{UPLOAD_FOLDER}/original_image.jpg'
-        adjusted_path = f'{UPLOAD_FOLDER}/adjusted_image.jpg'
-        boxed_path = f'{UPLOAD_FOLDER}/image_with_box.jpg'
+        original_path = f'{UPLOAD_FOLDER}/original_image_{timestamp}.jpg'
+        adjusted_path = f'{UPLOAD_FOLDER}/adjusted_image_{timestamp}.jpg'
+        boxed_path = f'{UPLOAD_FOLDER}/image_with_box_{timestamp}.jpg'
     
         # 保存原始圖片 
         image = Image.open(BytesIO(message_content))    
@@ -368,10 +368,13 @@ def analyze_image_from_web():
         # 接收上傳的圖片
         image_file = request.files['image']
         image = Image.open(image_file.stream)
+        
+        # 獲取當前的時間
+        timestamp = int(time.time())
 
-        original_path = os.path.join(UPLOAD_FOLDER, f'original_image.jpg')
-        adjusted_path = os.path.join(UPLOAD_FOLDER, f'adjusted_image.jpg')
-        boxed_path = os.path.join(UPLOAD_FOLDER, f'image_with_box.jpg')
+        original_path = os.path.join(UPLOAD_FOLDER, f'original_image_{timestamp}.jpg')
+        adjusted_path = os.path.join(UPLOAD_FOLDER, f'adjusted_image_{timestamp}.jpg')
+        boxed_path = os.path.join(UPLOAD_FOLDER, f'image_with_box_{timestamp}.jpg')
         
         # 處理圖片並保存到本地
         image.save(original_path)
