@@ -47,9 +47,9 @@ image_client = ImageAnalysisClient(
 )
 # OpenAI Setup
 azure_client = AzureOpenAI(
-    azure_endpoint=config["AzureOpenAI"]["EndPoint"],
+    azure_endpoint=os.getenv("OPENAI_API_ENDPOINT"),
     api_key=os.getenv("OPENAI_API_KEY"),
-    api_version=config["AzureOpenAI"]["ApiVersion"]
+    api_version=os.getenv("OPENAI_API_VERSION")
 )
 URL = config["Deploy"]["WEBSITE"]
 # 本地暫存圖片資料夾
@@ -337,7 +337,7 @@ def openai_gpt4v_sdk(analysis_result, user_image_url:str)->str:
     """
     try:
         response = azure_client.chat.completions.create(
-            model=config["AzureOpenAI"]["GPT4V_DEPLOYMENT_NAME"],
+            model=os.getenv("GPT4V_DEPLOYMENT_NAME"),
             messages=[
                 {'role': 'system','content': prompt_text},
                 {"role": "user","content": 
@@ -368,7 +368,7 @@ def analyze_image_from_web():
         # 接收上傳的圖片
         image_file = request.files['image']
         image = Image.open(image_file.stream)
-        
+
         # 獲取當前的時間
         timestamp = int(time.time())
 
