@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+        <meta charset="utf-8">
+        <title></title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="{{url_for('static', filename='css/style.css')}}">
+    </head>
+<body>
+    <div class="container">
+        <h1>手機攝影AI助理</h1>
+        <p>請上傳一張圖片，讓 AI 幫你分析！</p>
+
+        <form id="uploadForm">
+            <input type="file" id="imageInput" accept="image/*" required>
+            <button type="submit">開始分析</button>
+        </form>
+
+        <div id="loading" class="hidden">
+            <div class="spinner"></div>
+            <p>分析中，請稍候...</p>
+        </div>
+
+        <div id="results" class="hidden">
+            <h2>分析結果</h2>
+            <div class="result-section">
+                <h3>AI 評價</h3>
+                <p id="textResult"></p>
+            </div>
+            <div class="result-section">
+                <h3>修圖建議圖</h3>
+                <img id="boxedImage" alt="修圖建議圖" class="result-image">
+            </div>
+            <div class="result-section">
+                <h3>修圖後照片</h3>
+                <img id="adjustedImage" alt="修圖後照片" class="result-image">
+            </div>
+        </div>
+    </div>
+        <script src="//unpkg.com/jquery"></script>
+        <script src="{{url_for('static', filename='js/main.js')}}"></script>
+</body>
+</html>
