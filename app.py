@@ -462,5 +462,5 @@ def analyze_image_from_web():
         #delete_blob_image(adjusted_image_url)
         #delete_blob_image(image_with_box_url)
 
-# if __name__ == "__main__":
-#     app.run(host='0.0.0.0', port=8000)
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=8000)
