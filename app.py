@@ -178,7 +178,7 @@ def message_image(event):
         print(f'錯誤:{e}')
 
 # 接收圖片
-def fnAnalysis(image:bytes,original_image_url:str,adjusted_image_url:str,image_with_box_url:str) -> str:
+def fnAnalysis(image:bytes,original_image_url:str) -> str:
     '''Analyze Image by azure ai vision
     image - the user inputs the image, save image to BytesIO
     original_image_url - the path of original image 
@@ -191,10 +191,10 @@ def fnAnalysis(image:bytes,original_image_url:str,adjusted_image_url:str,image_w
     analysis_result = analyze_image_with_azure(image)
 
     # 根據 AI 建議進行圖片調整
-    #process_and_adjust_image(analysis_result, image, adjusted_image_url)
+    adjusted_image_url = process_and_adjust_image(analysis_result, image)
 
     # 標註建議調整的部分
-    #draw_smart_crop_box(analysis_result, image, image_with_box_url)
+    image_with_box_url = draw_smart_crop_box(analysis_result, image)
     
     # 輸出文字評價
     msg = openai_gpt4v_sdk(analysis_result, original_image_url)
@@ -202,7 +202,7 @@ def fnAnalysis(image:bytes,original_image_url:str,adjusted_image_url:str,image_w
 
     time.sleep(3)
 
-    return msg
+    return msg,adjusted_image_url,image_with_box_url
 
 # 使用 Azure Vision API 分析圖片
 def analyze_image_with_azure(image)-> dict:
@@ -237,12 +237,11 @@ def analyze_image_with_azure(image)-> dict:
     return analysis_result
 
 # 根據分析結果進行影像後製和輸出
-def process_and_adjust_image(analysis_result, original_image_data, output_path):
+def process_and_adjust_image(analysis_result, original_image_data):
     '''crop and enhace image
     analysis_result - from def analyze_image_with_azure
     original_image_data - from the user
-    output_path - the path of adjusted image
-    no return 
+    return adjusted_image_url
     '''
     print("\n--- 根據分析結果進行影像後製 ---")
     # 獲取智慧型裁切的建議
@@ -279,16 +278,16 @@ def process_and_adjust_image(analysis_result, original_image_data, output_path):
     adjusted_img = enhancer_color.enhance(1.2) # 增加 20% 飽和度
 
     # 保存調整後的圖片
-    adjusted_img.save(output_path)
-    print(f"調整後的圖片已保存至: {output_path}")  
+    adjusted_image_url = upload_image_to_azure(adjusted_img)
+
+    return adjusted_image_url
     
 # 在圖片上標註 AI 建議的區域
-def draw_smart_crop_box(analysis_result, original_image_data, output_path):
+def draw_smart_crop_box(analysis_result, original_image_data):
     '''draw a red box to mark crop area on the image
     analysis_result - from def analyze_image_with_azure
     original_image_data - from the user
-    output_path - the path of image with box
-    no return 
+    return image_with_box_url
     '''
     print("\n--- 在圖片上標註 AI 建議的區域 ---")
     draw = ImageDraw.Draw(original_image_data)
@@ -303,8 +302,9 @@ def draw_smart_crop_box(analysis_result, original_image_data, output_path):
         )
         # 用紅色邊框標示
         draw.rectangle(box, outline="red", width=5)
-        original_image_data.save(output_path)
-        print(f"已標註的圖片已保存至: {output_path}")
+        image_with_box_url = upload_image_to_azure(original_image_data)
+
+    return image_with_box_url
 
 # 使用 OpenAI GPT-4V SDK 進行圖片評價
 def openai_gpt4v_sdk(analysis_result, user_image_url:str)->str:
@@ -358,6 +358,7 @@ def openai_gpt4v_sdk(analysis_result, user_image_url:str)->str:
         print("Error:", error)
         return f"系統異常，請再試一次。{error}"
 
+# 上傳至 Azure Blob Storage
 def upload_image_to_azure(image: Image.Image):
     """將 PIL Image 物件上傳到 Azure Blob Storage 並回傳 URL"""
     try:
@@ -390,39 +391,70 @@ def upload_image_to_azure(image: Image.Image):
     except Exception as e:
         print(f"上傳圖片到 Azure Blob 失敗: {e}")
         return None
+
+# 刪除 Azure Blob Storage 中的圖片
+def delete_blob_image(image_url):
+    """
+    根據圖片的 URL 刪除 Azure Blob Storage 中的圖片。
     
+    Args:
+        image_url: 上傳後回傳的圖片公開 URL。
+    """
+    try:
+        connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+        if not connection_string:
+            print("錯誤：Azure Storage 連接字串未設定。")
+            return
+            
+        blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+        
+        # 從 URL 中解析出容器名稱和 Blob 名稱
+        from urllib.parse import urlparse
+        parsed_url = urlparse(image_url)
+        container_name = parsed_url.path.split('/')[1]
+        blob_name = '/'.join(parsed_url.path.split('/')[2:])
+        
+        container_client = blob_service_client.get_container_client(container_name)
+        blob_client = container_client.get_blob_client(blob_name)
+        
+        # 刪除 Blob
+        blob_client.delete_blob()
+        print(f"成功刪除圖片：{image_url}")
+        
+    except Exception as e:
+        print(f"刪除圖片時發生錯誤：{e}")
+
 @app.route("/")
 def index():
     return render_template("index.html")
 
 @app.route("/analyze_image", methods=['POST'])
 def analyze_image_from_web():
+    # 接收上傳的圖片
+    image_file = request.files['image']
+    if not image_file:
+        return jsonify({"error": "請上傳圖片檔案"}), 400
+
+    # 上傳原始圖片   
+    image = Image.open(image_file.stream)
+    original_image_url = upload_image_to_azure(image)
+    adjusted_image_url = ''
+    image_with_box_url = ''
     try:
-        # 接收上傳的圖片
-        image_file = request.files['image']
-        if not image_file:
-            return jsonify({"error": "請上傳圖片檔案"}), 400
-        
-        image = Image.open(image_file.stream)
-        uploaded_url = upload_image_to_azure(image)
         
         # 獲取當前的時間
-        timestamp = int(time.time())
+        #timestamp = int(time.time())
 
         #original_path = os.path.join(UPLOAD_FOLDER, f'original_image_{timestamp}.jpg')
-        adjusted_path = os.path.join(UPLOAD_FOLDER, f'adjusted_image_{timestamp}.jpg')
-        boxed_path = os.path.join(UPLOAD_FOLDER, f'image_with_box_{timestamp}.jpg')
+        #adjusted_path = os.path.join(UPLOAD_FOLDER, f'adjusted_image_{timestamp}.jpg')
+        #boxed_path = os.path.join(UPLOAD_FOLDER, f'image_with_box_{timestamp}.jpg')
         
-        # 處理圖片並保存到本地
-        #image.save(original_path)
-        #original_image_url = f'{URL}/{original_path.replace('static','files')}'
-        analyze_result = fnAnalysis(image,uploaded_url,adjusted_path,boxed_path)
-
+        analyze_result,adjusted_image_url,image_with_box_url = fnAnalysis(image,original_image_url)
         # 組合回傳資料
         response_data = {
             "text": analyze_result,
-            "boxedImageUrl": f"{URL}/{boxed_path.replace('static','files')}",
-            "adjustedImageUrl": f"{URL}/{adjusted_path.replace('static','files')}",
+            "adjustedImageUrl": adjusted_image_url,
+            "boxedImageUrl": image_with_box_url,
         }
         
         return jsonify(response_data), 200
@@ -430,6 +462,11 @@ def analyze_image_from_web():
     except Exception as e:
         print(f"Error processing image from web: {e}")
         return jsonify({"error": "圖片處理失敗"}), 500
-    
+    finally:
+        # 刪除 Azure Blob Storage 中的圖片
+        delete_blob_image(original_image_url)
+        delete_blob_image(adjusted_image_url)
+        delete_blob_image(image_with_box_url)
+
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8000)
