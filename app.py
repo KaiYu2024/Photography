@@ -33,7 +33,7 @@ from azure.core.credentials import AzureKeyCredential
 from PIL import Image, ImageEnhance, ImageDraw
 
 from openai import AzureOpenAI
-from azure.storage.blob import BlobServiceClient, ContentSettings
+from azure.storage.blob import BlobServiceClient
 
 # Config Parser
 config = configparser.ConfigParser()
@@ -462,5 +462,5 @@ def analyze_image_from_web():
         #delete_blob_image(adjusted_image_url)
         #delete_blob_image(image_with_box_url)
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=8000)
+# if __name__ == "__main__":
+#     app.run(host='0.0.0.0', port=8000)
