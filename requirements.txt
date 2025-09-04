@@ -3,3 +3,4 @@ flask
 azure-ai-vision-imageanalysis
 openai
 pillow
+azure.storage.blob

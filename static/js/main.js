@@ -19,8 +19,6 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
     const adjustedImage = document.getElementById('adjustedImage');
 
     // 隱藏結果區，顯示載入區
-    resultsSection.classList.add('hidden');
-    loadingSection.classList.remove('hidden');
     loadingSection.style.display = 'flex';
 
     try {
@@ -32,6 +30,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
         if (!response.ok) {
             throw new Error('伺服器回傳錯誤');
         }
+        loadingSection.style.display = 'none';
 
         const data = await response.json();
         

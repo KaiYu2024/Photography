@@ -33,7 +33,7 @@ from azure.core.credentials import AzureKeyCredential
 from PIL import Image, ImageEnhance, ImageDraw
 
 from openai import AzureOpenAI
-
+from azure.storage.blob import BlobServiceClient, ContentSettings
 
 # Config Parser
 config = configparser.ConfigParser()
@@ -358,6 +358,39 @@ def openai_gpt4v_sdk(analysis_result, user_image_url:str)->str:
         print("Error:", error)
         return f"系統異常，請再試一次。{error}"
 
+def upload_image_to_azure(image: Image.Image):
+    """將 PIL Image 物件上傳到 Azure Blob Storage 並回傳 URL"""
+    try:
+        # 從環境變數讀取設定
+        connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+        container_name = "image" # 替換成你剛剛建立的容器名稱
+        
+        if not connection_string:
+            print("錯誤：Azure Storage 連接字串未設定。")
+            return None
+
+        # 建立 Blob 服務客戶端
+        blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+        container_client = blob_service_client.get_container_client(container_name)
+
+        # 將圖片轉換為二進位資料
+        image_bytes = BytesIO()
+        image.save(image_bytes, format="JPEG")
+        image_bytes.seek(0)
+
+        # 建立一個獨一無二的檔名
+        blob_name = f"image_{os.urandom(8).hex()}.jpg"
+        
+        # 上傳圖片
+        blob_client = container_client.get_blob_client(blob=blob_name)
+        blob_client.upload_blob(image_bytes, overwrite=True)
+
+        # 回傳公開的 URL
+        return blob_client.url
+    except Exception as e:
+        print(f"上傳圖片到 Azure Blob 失敗: {e}")
+        return None
+    
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -367,19 +400,23 @@ def analyze_image_from_web():
     try:
         # 接收上傳的圖片
         image_file = request.files['image']
+        if not image_file:
+            return jsonify({"error": "請上傳圖片檔案"}), 400
+        
         image = Image.open(image_file.stream)
-
+        uploaded_url = upload_image_to_azure(image)
+        
         # 獲取當前的時間
         timestamp = int(time.time())
 
-        original_path = os.path.join(UPLOAD_FOLDER, f'original_image_{timestamp}.jpg')
+        #original_path = os.path.join(UPLOAD_FOLDER, f'original_image_{timestamp}.jpg')
         adjusted_path = os.path.join(UPLOAD_FOLDER, f'adjusted_image_{timestamp}.jpg')
         boxed_path = os.path.join(UPLOAD_FOLDER, f'image_with_box_{timestamp}.jpg')
         
         # 處理圖片並保存到本地
-        image.save(original_path)
-        original_image_url = f'{URL}/{original_path.replace('static','files')}'
-        analyze_result = fnAnalysis(image,original_image_url,adjusted_path,boxed_path)
+        #image.save(original_path)
+        #original_image_url = f'{URL}/{original_path.replace('static','files')}'
+        analyze_result = fnAnalysis(image,uploaded_url,adjusted_path,boxed_path)
 
         # 組合回傳資料
         response_data = {
