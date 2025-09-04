@@ -191,10 +191,10 @@ def fnAnalysis(image:bytes,original_image_url:str,adjusted_image_url:str,image_w
     analysis_result = analyze_image_with_azure(image)
 
     # 根據 AI 建議進行圖片調整
-    process_and_adjust_image(analysis_result, image, adjusted_image_url)
+    #process_and_adjust_image(analysis_result, image, adjusted_image_url)
 
     # 標註建議調整的部分
-    draw_smart_crop_box(analysis_result, image, image_with_box_url)
+    #draw_smart_crop_box(analysis_result, image, image_with_box_url)
     
     # 輸出文字評價
     msg = openai_gpt4v_sdk(analysis_result, original_image_url)
