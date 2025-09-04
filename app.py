@@ -128,21 +128,20 @@ def message_image(event):
             line_bot_blob_api=MessagingApiBlob(api_client)
             message_content=line_bot_blob_api.get_message_content(message_id=event.message.id)
 
-        # 獲取當前的時間
-        timestamp = int(time.time())
+        # # 獲取當前的時間
+        # timestamp = int(time.time())
 
-        # 定義圖片路徑，加上時間標籤
-        original_path = f'{UPLOAD_FOLDER}/original_image_{timestamp}.jpg'
-        adjusted_path = f'{UPLOAD_FOLDER}/adjusted_image_{timestamp}.jpg'
-        boxed_path = f'{UPLOAD_FOLDER}/image_with_box_{timestamp}.jpg'
+        # # 定義圖片路徑，加上時間標籤
+        # original_path = f'{UPLOAD_FOLDER}/original_image_{timestamp}.jpg'
+        # adjusted_path = f'{UPLOAD_FOLDER}/adjusted_image_{timestamp}.jpg'
+        # boxed_path = f'{UPLOAD_FOLDER}/image_with_box_{timestamp}.jpg'
     
         # 保存原始圖片 
         image = Image.open(BytesIO(message_content))    
-        image.save(original_path)
-
+        original_image_url = upload_image_to_azure(image)
+        
         # 圖片分析與處理
-        original_image_url = f'{URL}/{original_path.replace('static','files')}'
-        analyze_result = fnAnalysis(image,original_image_url,adjusted_path,boxed_path)
+        analyze_result,adjusted_image_url,image_with_box_url = fnAnalysis(image,original_image_url)
 
         # OpenAI 評價
         reply_messages.append(
@@ -154,8 +153,8 @@ def message_image(event):
         )
         # 裁切建議圖(紅框)
         reply_messages.append(
-            ImageMessage(original_content_url=f'{URL}/{boxed_path}',
-                        preview_image_url=f'{URL}/{boxed_path.replace('static','files')}')
+            ImageMessage(original_content_url=image_with_box_url,  # 放大顯示圖
+                        preview_image_url=image_with_box_url)   # 預覽圖(縮圖)
         )
         # 文字:調整後的圖片
         reply_messages.append(
@@ -163,8 +162,8 @@ def message_image(event):
         )
         # 修正後的圖
         reply_messages.append(
-            ImageMessage(original_content_url=f'{URL}/{adjusted_path.replace('static','files')}',  # 放大顯示圖
-                        preview_image_url=f'{URL}/{adjusted_path.replace('static','files')}')     # 預覽圖(縮圖)
+            ImageMessage(original_content_url=adjusted_image_url,  # 放大顯示圖
+                        preview_image_url=adjusted_image_url)     # 預覽圖(縮圖)
         )
         print(reply_messages)
         # 回覆訊息
@@ -441,14 +440,6 @@ def analyze_image_from_web():
     adjusted_image_url = ''
     image_with_box_url = ''
     try:
-        
-        # 獲取當前的時間
-        #timestamp = int(time.time())
-
-        #original_path = os.path.join(UPLOAD_FOLDER, f'original_image_{timestamp}.jpg')
-        #adjusted_path = os.path.join(UPLOAD_FOLDER, f'adjusted_image_{timestamp}.jpg')
-        #boxed_path = os.path.join(UPLOAD_FOLDER, f'image_with_box_{timestamp}.jpg')
-        
         analyze_result,adjusted_image_url,image_with_box_url = fnAnalysis(image,original_image_url)
         # 組合回傳資料
         response_data = {
@@ -465,8 +456,8 @@ def analyze_image_from_web():
     finally:
         # 刪除 Azure Blob Storage 中的圖片
         delete_blob_image(original_image_url)
-        delete_blob_image(adjusted_image_url)
-        delete_blob_image(image_with_box_url)
+        #delete_blob_image(adjusted_image_url)
+        #delete_blob_image(image_with_box_url)
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8000)
