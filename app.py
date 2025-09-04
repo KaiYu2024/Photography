@@ -61,7 +61,7 @@ app = Flask(__name__, static_folder="static", static_url_path="/files")
 
 # Channel Access Token & Secret
 channel_access_token = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
-channel_secret = config['Line']['CHANNEL_SECRET']
+channel_secret = os.getenv('CHANNEL_SECRET')
 if channel_secret is None:
     print('Specify LINE_CHANNEL_SECRET as environment variable.')
     sys.exit(1)
