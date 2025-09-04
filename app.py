@@ -123,23 +123,23 @@ def message_image(event):
     user input image message
     """ 
     reply_messages = []
-    try:
-        with ApiClient(configuration) as api_client: 
-            line_bot_blob_api=MessagingApiBlob(api_client)
-            message_content=line_bot_blob_api.get_message_content(message_id=event.message.id)
-
-        # # 獲取當前的時間
-        # timestamp = int(time.time())
-
-        # # 定義圖片路徑，加上時間標籤
-        # original_path = f'{UPLOAD_FOLDER}/original_image_{timestamp}.jpg'
-        # adjusted_path = f'{UPLOAD_FOLDER}/adjusted_image_{timestamp}.jpg'
-        # boxed_path = f'{UPLOAD_FOLDER}/image_with_box_{timestamp}.jpg'
     
-        # 保存原始圖片 
-        image = Image.open(BytesIO(message_content))    
-        original_image_url = upload_image_to_azure(image)
-        
+    with ApiClient(configuration) as api_client: 
+        line_bot_blob_api=MessagingApiBlob(api_client)
+        message_content=line_bot_blob_api.get_message_content(message_id=event.message.id)
+
+    # # 獲取當前的時間
+    # timestamp = int(time.time())
+
+    # # 定義圖片路徑，加上時間標籤
+    # original_path = f'{UPLOAD_FOLDER}/original_image_{timestamp}.jpg'
+    # adjusted_path = f'{UPLOAD_FOLDER}/adjusted_image_{timestamp}.jpg'
+    # boxed_path = f'{UPLOAD_FOLDER}/image_with_box_{timestamp}.jpg'
+
+    # 保存原始圖片 
+    image = Image.open(BytesIO(message_content))    
+    original_image_url = upload_image_to_azure(image)
+    try:
         # 圖片分析與處理
         analyze_result,adjusted_image_url,image_with_box_url = fnAnalysis(image,original_image_url)
 
@@ -175,6 +175,9 @@ def message_image(event):
             ))
     except Exception as e:
         print(f'錯誤:{e}')
+    finally:
+        # 刪除 Azure Blob Storage 中的圖片
+        delete_blob_image(original_image_url)
 
 # 接收圖片
 def fnAnalysis(image:bytes,original_image_url:str) -> str:
