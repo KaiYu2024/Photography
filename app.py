@@ -46,11 +46,13 @@ image_client = ImageAnalysisClient(
     region=config["AzureVision"]["Region"],
 )
 # OpenAI Setup
+# get value from environment variable
 azure_client = AzureOpenAI(
     azure_endpoint=os.getenv("OPENAI_API_ENDPOINT"),
     api_key=os.getenv("OPENAI_API_KEY"),
     api_version=os.getenv("OPENAI_API_VERSION")
 )
+
 URL = config["Deploy"]["WEBSITE"]
 # 本地暫存圖片資料夾
 UPLOAD_FOLDER="static"
@@ -89,18 +91,6 @@ def callback():
     except InvalidSignatureError:
         abort(400)
     return 'OK'
-
-@app.route("/files/<path:filename>")
-def serve_static(filename):
-    """
-    自定義靜態檔案路由，並禁用快取。
-    """
-    response = send_from_directory(app.static_folder, filename)
-    # 禁用快取，確保每次都重新載入
-    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
-    return response
 
 @handler.add(MessageEvent, message=TextMessageContent)
 def message_text(event):
@@ -239,7 +229,7 @@ def analyze_image_with_azure(image)-> dict:
     return analysis_result
 
 # 根據分析結果進行影像後製和輸出
-def process_and_adjust_image(analysis_result, original_image_data):
+def process_and_adjust_image(analysis_result, original_image_data)-> str:
     '''crop and enhace image
     analysis_result - from def analyze_image_with_azure
     original_image_data - from the user
@@ -285,7 +275,7 @@ def process_and_adjust_image(analysis_result, original_image_data):
     return adjusted_image_url
     
 # 在圖片上標註 AI 建議的區域
-def draw_smart_crop_box(analysis_result, original_image_data):
+def draw_smart_crop_box(analysis_result, original_image_data)-> str:
     '''draw a red box to mark crop area on the image
     analysis_result - from def analyze_image_with_azure
     original_image_data - from the user
@@ -426,10 +416,12 @@ def delete_blob_image(image_url):
     except Exception as e:
         print(f"刪除圖片時發生錯誤：{e}")
 
+# web 端介面
 @app.route("/")
 def index():
     return render_template("index.html")
 
+# web 端圖片分析
 @app.route("/analyze_image", methods=['POST'])
 def analyze_image_from_web():
     # 接收上傳的圖片
@@ -461,6 +453,18 @@ def analyze_image_from_web():
         delete_blob_image(original_image_url)
         #delete_blob_image(adjusted_image_url)
         #delete_blob_image(image_with_box_url)
+
+@app.route("/files/<path:filename>")
+def serve_static(filename):
+    """
+    自定義靜態檔案路由，並禁用快取。
+    """
+    response = send_from_directory(app.static_folder, filename)
+    # 禁用快取，確保每次都重新載入
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8000)
