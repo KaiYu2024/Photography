@@ -356,7 +356,7 @@ def openai_gpt4v_sdk(analysis_result, user_image_url:str)->str:
         return response.choices[0].message.content
     except Exception as error:
         print("Error:", error)
-        return"系統異常，請再試一次。{error}"
+        return f"系統異常，請再試一次。{error}"
 
 @app.route("/")
 def index():
