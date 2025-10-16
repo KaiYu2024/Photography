@@ -36,8 +36,8 @@ from openai import AzureOpenAI
 from azure.storage.blob import BlobServiceClient
 
 # Config Parser
-config = configparser.ConfigParser()
-config.read("config.ini")
+# config = configparser.ConfigParser()
+# config.read("config.ini")
 
 # ImageAnalysis Setup
 image_client = ImageAnalysisClient(
@@ -53,7 +53,7 @@ azure_client = AzureOpenAI(
     api_version=os.getenv("OPENAI_API_VERSION")
 )
 
-URL = config["Deploy"]["WEBSITE"]
+# URL = config["Deploy"]["WEBSITE"]
 # 本地暫存圖片資料夾
 UPLOAD_FOLDER="static"
 
