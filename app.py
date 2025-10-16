@@ -41,9 +41,9 @@ config.read("config.ini")
 
 # ImageAnalysis Setup
 image_client = ImageAnalysisClient(
-    credential=AzureKeyCredential(config["AzureVision"]["Key"]),
-    endpoint=config["AzureVision"]["EndPoint"],
-    region=config["AzureVision"]["Region"],
+    credential=AzureKeyCredential(os.getenv("AZURE_VISION_KEY")),
+    endpoint=os.getenv("AZURE_VISION_ENDPOINT"),
+    region=os.getenv("AZURE_VISION_REGION"),
 )
 # OpenAI Setup
 # get value from environment variable
